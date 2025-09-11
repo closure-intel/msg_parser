@@ -1,0 +1,17 @@
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+Content-Type: multipart/mixed; charset="utf-8"; Message-ID=""; boundary="===============1426912129892241291=="
+Subject: =?utf-8?q?outer_subject?=
+Date: None
+reply-to: 
+
+You will not see this in a MIME-aware mail reader.
+
+--===============1426912129892241291==
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+
+T3V0ZXIgYm9keQ0K
+
+--===============1426912129892241291==--
