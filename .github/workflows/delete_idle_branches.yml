@@ -1,0 +1,54 @@
+name: Delete Idle Branches & Tags
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every Sunday
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install GitHub CLI
+        run: sudo apt-get update && sudo apt-get install -y gh
+
+      - name: Delete old branches
+        env:
+          REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          threshold=$(date -d "1 week ago" +%s)
+          branches=$(gh api repos/$REPO/branches --jq '.[].name')
+          for branch in $branches; do
+            if [ "$branch" != "main" ] && [ "$branch" != "master" ]; then
+              commit_date=$(gh api repos/$REPO/commits/$branch --jq '.commit.committer.date' | tr -d '"')
+              branch_time=$(date -d "$commit_date" +%s)
+              if [ $branch_time -lt $threshold ]; then
+                echo "Deleting branch: $branch"
+                gh api -X DELETE repos/$REPO/git/refs/heads/$branch
+              fi
+            fi
+          done
+
+      - name: Delete old tags
+        env:
+          REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          threshold=$(date -d "1 week ago" +%s)
+          tags=$(gh api repos/$REPO/tags --jq '.[].name')
+          for tag in $tags; do
+              commit_date=$(gh api repos/$REPO/commits/$tag --jq '.commit.committer.date' | tr -d '"')
+              tag_time=$(date -d "$commit_date" +%s)
+              if [ $tag_time -lt $threshold ]; then
+                echo "Deleting tag: $tag"
+                gh api -X DELETE repos/$REPO/git/refs/tags/$tag
+              fi
+          done
+
