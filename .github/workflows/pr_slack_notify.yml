@@ -1,0 +1,51 @@
+name: Slack Pull Request Notification
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  pr-title:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: read
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          requireScope: true
+  notify:
+    name: PR Slack Notification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Escape PR title
+        id: pr_data
+        run: |
+          # Get the PR title and escape special characters for JSON (needed for Reverts Commits)
+          PR_TITLE='${{ github.event.pull_request.title }}'
+          # Properly escape JSON special characters and quotes
+          ESCAPED_TITLE=$(echo "$PR_TITLE" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g' | sed 's/\t/\\t/g' | sed 's/\n/\\n/g' | sed 's/\r/\\r/g')
+          echo "escaped_title=$ESCAPED_TITLE" >> $GITHUB_OUTPUT
+
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook-type: incoming-webhook
+          webhook: ${{ secrets.SLACK_PULL_REQUEST_WEBHOOK_URL }}
+          payload: |
+            text: "New PR: ${{ steps.pr_data.outputs.escaped_title }}\nBy: ${{ github.event.pull_request.user.login }}\nLink: ${{ github.event.pull_request.html_url }}"
+

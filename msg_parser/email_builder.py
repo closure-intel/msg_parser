@@ -99,7 +99,13 @@ class EmailFormatter(object):
             ctype = attachment.AttachMimeTag
             data = attachment.data
             filename = attachment.Filename
-            maintype, subtype = ctype.split("/", 1)
+
+            # Handle missing or malformed MIME types
+            if ctype and "/" in ctype:
+                maintype, subtype = ctype.split("/", 1)
+            else:
+                # Default to application/octet-stream for unknown/malformed types
+                maintype, subtype = "application", "octet-stream"
 
             if data is None:
                 continue
