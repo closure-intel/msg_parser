@@ -35,20 +35,3 @@ jobs:
               fi
             fi
           done
-
-      - name: Delete old tags
-        env:
-          REPO: ${{ github.repository }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          threshold=$(date -d "1 week ago" +%s)
-          tags=$(gh api repos/$REPO/tags --jq '.[].name')
-          for tag in $tags; do
-              commit_date=$(gh api repos/$REPO/commits/$tag --jq '.commit.committer.date' | tr -d '"')
-              tag_time=$(date -d "$commit_date" +%s)
-              if [ $tag_time -lt $threshold ]; then
-                echo "Deleting tag: $tag"
-                gh api -X DELETE repos/$REPO/git/refs/tags/$tag
-              fi
-          done
-
