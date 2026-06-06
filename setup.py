@@ -59,7 +59,4 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     zip_safe=False,
-    extras_require={
-        'rtf': ['compressed_rtf >= 1.0.5'],
-    },
 )

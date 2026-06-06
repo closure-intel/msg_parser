@@ -54,18 +54,19 @@ class EmailFormatter(object):
         else:
             self.message.add_header("reply-to", from_address)
 
-        # Required Email body content
+        # Email body content. Some valid messages legitimately have no body
+        # (subject-only sends, automated alerts, RTF-only shells whose text
+        # collapses to empty) yet still carry useful headers and attachments.
+        # Attach an empty plain-text part rather than raising, so those messages
+        # still export instead of dropping the whole file.
         body_content = self.msg_obj.body
-        if body_content:
-            if "<html>" in body_content:
-                body_type = "html"
-            else:
-                body_type = "plain"
-
-            body = MIMEText(_text=body_content, _subtype=body_type, _charset="UTF-8")
-            self.message.attach(body)
+        if body_content and "<html>" in body_content:
+            body_type = "html"
         else:
-            raise KeyError("Missing email body")
+            body_type = "plain"
+
+        body = MIMEText(_text=body_content or "", _subtype=body_type, _charset="UTF-8")
+        self.message.attach(body)
 
         # Add message preamble
         self.message.preamble = "You will not see this in a MIME-aware mail reader.\n"

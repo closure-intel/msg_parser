@@ -1,4 +1,5 @@
 # msg_parser requirements
 
 olefile>=0.46
-
+compressed_rtf>=1.0.5
+striprtf>=0.0.32
