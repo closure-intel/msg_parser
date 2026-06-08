@@ -436,13 +436,36 @@ class MsOxMessage(object):
             self.body = self.body.decode("utf-8", "ignore")
 
         if not self.body and "RtfCompressed" in property_values:
-            try:
-                import compressed_rtf
-            except ImportError:
-                compressed_rtf = None
-            if compressed_rtf:
-                compressed_rtf_body = property_values["RtfCompressed"]
-                self.body = compressed_rtf.decompress(compressed_rtf_body)
+            self.body = self._rtf_compressed_to_text(property_values["RtfCompressed"])
+
+    @staticmethod
+    def _rtf_compressed_to_text(compressed_rtf_body):
+        """Turn a PR_RTF_COMPRESSED stream into the plain-text message body.
+
+        Returns a str (consistent with the Html/Body branches), or None when
+        compressed_rtf is not installed. An RTF formatting shell with no real
+        text yields "".
+
+        A genuinely corrupt/unsupported compressed stream is left to raise from
+        decompress(), so callers can still surface broken files. A striprtf
+        hiccup on otherwise-valid RTF falls back to the decoded RTF rather than
+        aborting the whole parse and losing already-readable headers/attachments.
+        """
+        try:
+            import compressed_rtf
+        except ImportError:
+            return None
+        decompressed = compressed_rtf.decompress(compressed_rtf_body)
+        if isinstance(decompressed, bytes):
+            decompressed = decompressed.decode("utf-8", "ignore")
+        try:
+            from striprtf.striprtf import rtf_to_text
+        except ImportError:
+            return decompressed
+        try:
+            return rtf_to_text(decompressed)
+        except Exception:
+            return decompressed
 
     def _set_recipients(self):
         recipients = self._message.recipients
